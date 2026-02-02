@@ -1,32 +1,27 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-
-local autoEat = true -- đổi false để tắt
+local autoEat = true
 
 task.spawn(function()
 	while autoEat do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
-		if not root then
-			task.wait(1)
-			continue
-		end
+		if not root then task.wait(0.5) continue end
 
 		for _, v in ipairs(workspace:GetDescendants()) do
 			if not autoEat then break end
-
 			if v:IsA("Model") and v.Name:lower():find("meat") then
 				local targetName = v.Name:lower():gsub("_", "")
 				local target = v:FindFirstChild(targetName)
 
 				if target and target:IsA("BasePart") then
-					-- Teleport nhẹ, ít bị nghi
+					-- Teleport rất nhanh
 					root.CFrame = target.CFrame + Vector3.new(0, 2, 0)
-					task.wait(0.15)
+					task.wait(0.05) -- giảm wait → nhanh hơn
 				end
 			end
 		end
 
-		task.wait(0.5)
+		task.wait(0.2) -- giảm wait → vòng sau nhanh hơn
 	end
 end)
