@@ -1,11 +1,5 @@
---[[
- WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
--- Xeno GUI | Toggle L | Drag | Minimize | Close | Tabs | Auto scripts keep running
-
 local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local Player = Players.LocalPlayer
 
 -- ================= GUI =================
@@ -30,6 +24,7 @@ Frame.BorderSizePixel = 0
 Frame.Parent = ScreenGui
 Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 10)
 
+-- Title
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -80, 0, 30)
 Title.BackgroundTransparency = 1
@@ -64,18 +59,21 @@ MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 20
 MinBtn.Parent = Frame
 
+-- Tabs bar
 local TabsBar = Instance.new("Frame")
 TabsBar.Size = UDim2.new(1, 0, 0, 35)
 TabsBar.Position = UDim2.new(0, 0, 0, 30)
 TabsBar.BackgroundTransparency = 1
 TabsBar.Parent = Frame
 
+-- Content
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, 0, 1, -65)
 Content.Position = UDim2.new(0, 0, 0, 65)
 Content.BackgroundTransparency = 1
 Content.Parent = Frame
 
+-- Minimize logic (SCRIPT VẪN CHẠY)
 local minimized = false
 local normalSize = Frame.Size
 
@@ -141,53 +139,89 @@ end
 -- ================= MAIN =================
 createButton(MainTab, "Teleport to Spawn", 15, Color3.fromRGB(50,150,250)).MouseButton1Click:Connect(function()
 	local c = Player.Character or Player.CharacterAdded:Wait()
-	c.HumanoidRootPart.CFrame = CFrame.new(124, 3.1, 1)
+	c.HumanoidRootPart.CFrame = CFrame.new(124,3.1,1)
 end)
 
 createButton(MainTab, "Go to End", 65, Color3.fromRGB(50,250,150)).MouseButton1Click:Connect(function()
 	local c = Player.Character or Player.CharacterAdded:Wait()
-	c.HumanoidRootPart.CFrame = CFrame.new(2606, -2.84, 1)
+	c.HumanoidRootPart.CFrame = CFrame.new(2606,-2.84,1)
 end)
 
--- ========== DELETE TSUNAMI (FIXED) ==========
+-- ===== ANTI TSUNAMI DAMAGE (KHÔNG XÓA SÓNG) =====
 local antiTsunami = false
 
-createButton(MainTab, "Delete Tsunami", 115, Color3.fromRGB(250,80,80)).MouseButton1Click:Connect(function()
+createButton(MainTab, "Disable Tsunami Damage", 115, Color3.fromRGB(250,80,80)).MouseButton1Click:Connect(function()
 	antiTsunami = true
 
-	for _,v in ipairs(workspace:GetDescendants()) do
-		if v:IsA("BasePart") and v.Name:lower():find("tsunami") or v.Name:lower():find("wave") or v.Name:lower():find("hitbox") then
-			v.CanTouch = false
-			v.CanCollide = false
-			v.Transparency = 1
-			v:Destroy()
+	for _,obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and (
+			obj.Name == "Hitbox"
+			or obj.Name:lower():find("tsunami")
+			or obj.Name:lower():find("wave")
+		) then
+			obj.CanTouch = false
+			obj.CanCollide = false
 		end
 
-		if (v:IsA("Script") or v:IsA("LocalScript")) and (
-			v.Name:lower():find("tsunami") or
-			v.Name:lower():find("wave") or
-			v.Name:lower():find("damage")
-		) then
-			v.Disabled = true
+		if (obj:IsA("Script") or obj:IsA("LocalScript")) then
+			local n = obj.Name:lower()
+			if n:find("tsunami") or n:find("wave") or n:find("damage") then
+				obj.Disabled = true
+			end
 		end
 	end
 end)
 
--- Auto delete tsunami spawn sau
-workspace.DescendantAdded:Connect(function(v)
+workspace.DescendantAdded:Connect(function(obj)
 	if not antiTsunami then return end
 
-	if v:IsA("BasePart") and (
-		v.Name:lower():find("tsunami") or
-		v.Name:lower():find("wave") or
-		v.Name:lower():find("hitbox")
+	if obj:IsA("BasePart") and (
+		obj.Name == "Hitbox"
+		or obj.Name:lower():find("tsunami")
+		or obj.Name:lower():find("wave")
 	) then
 		task.wait()
-		v.CanTouch = false
-		v.CanCollide = false
-		v.Transparency = 1
-		v:Destroy()
+		obj.CanTouch = false
+		obj.CanCollide = false
 	end
+
+	if (obj:IsA("Script") or obj:IsA("LocalScript")) then
+		local n = obj.Name:lower()
+		if n:find("tsunami") or n:find("wave") or n:find("damage") then
+			obj.Disabled = true
+		end
+	end
+end)
+
+-- ===== AUTO COLLECT =====
+local autoCollect = false
+local AutoBtn = createButton(MainTab, "Auto Collect Money", 165, Color3.fromRGB(80,150,250))
+
+AutoBtn.MouseButton1Click:Connect(function()
+	autoCollect = not autoCollect
+	AutoBtn.Text = autoCollect and "Stop Auto Collect" or "Auto Collect Money"
+
+	task.spawn(function()
+		while autoCollect do
+			local char = Player.Character or Player.CharacterAdded:Wait()
+			local saveCF = char.HumanoidRootPart.CFrame
+
+			for b=1,4 do
+				for s=1,30 do
+					if not autoCollect then break end
+					local base = workspace.Bases:FindFirstChild("Base"..b)
+					local slot = base and base:FindFirstChild("Slots") and base.Slots:FindFirstChild("Slot"..s)
+					if slot and slot:FindFirstChild("Collect") then
+						char.HumanoidRootPart.CFrame = slot.Collect.CFrame + Vector3.new(0,3,0)
+						task.wait(0.01)
+					end
+				end
+			end
+
+			char.HumanoidRootPart.CFrame = saveCF
+			task.wait(60)
+		end
+	end)
 end)
 
 -- ================= SCRIPTS =================
@@ -199,14 +233,14 @@ createButton(ScriptsTab, "Instant Proximity", 15, Color3.fromRGB(80,80,80)).Mous
 	end
 end)
 
--- Toggle GUI
+-- Toggle GUI (L)
 UIS.InputBegan:Connect(function(i,g)
 	if not g and i.KeyCode == Enum.KeyCode.L then
 		ScreenGui.Enabled = not ScreenGui.Enabled
 	end
 end)
 
--- Drag
+-- Drag GUI
 local dragging, dragStart, startPos
 Frame.InputBegan:Connect(function(i)
 	if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -219,7 +253,10 @@ end)
 UIS.InputChanged:Connect(function(i)
 	if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then
 		local delta = i.Position - dragStart
-		Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		Frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
 	end
 end)
 
