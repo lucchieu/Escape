@@ -1,27 +1,36 @@
+-- Auto Eat Meat / Grow Up
+-- by lucchieu (fixed)
+
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local autoEat = true
+
+local AUTO_EAT = true
+local TELEPORT_DELAY = 0.05
 
 task.spawn(function()
-	while autoEat do
-		local character = player.Character
-		local root = character and character:FindFirstChild("HumanoidRootPart")
-		if not root then task.wait(0.5) continue end
+	while AUTO_EAT do
+		local character = player.Character or player.CharacterAdded:Wait()
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if not root then
+			task.wait(0.3)
+			continue
+		end
 
 		for _, v in ipairs(workspace:GetDescendants()) do
-			if not autoEat then break end
-			if v:IsA("Model") and v.Name:lower():find("meat") then
-				local targetName = v.Name:lower():gsub("_", "")
-				local target = v:FindFirstChild(targetName)
+			if not AUTO_EAT then break end
 
-				if target and target:IsA("BasePart") then
-					-- Teleport rất nhanh
-					root.CFrame = target.CFrame + Vector3.new(0, 2, 0)
-					task.wait(0.05) -- giảm wait → nhanh hơn
+			if v:IsA("Model") and string.find(string.lower(v.Name), "meat") then
+				for _, part in ipairs(v:GetChildren()) do
+					if part:IsA("BasePart") then
+						root.CFrame = part.CFrame + Vector3.new(0, 2, 0)
+						task.wait(TELEPORT_DELAY)
+						break
+					end
 				end
 			end
 		end
 
-		task.wait(0.2) -- giảm wait → vòng sau nhanh hơn
+		task.wait(0.2)
 	end
 end)
