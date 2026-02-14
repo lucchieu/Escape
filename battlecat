@@ -1,0 +1,179 @@
+-- LocalScript (StarterPlayerScripts or StarterGui)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+
+local TARGET_CFRAME = CFrame.new(2000.83, 1.91, -600100.06)
+
+-- ===== GUI =====
+local gui = Instance.new("ScreenGui")
+gui.Name = "ConstantTeleportGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 320, 0, 160)
+frame.Position = UDim2.new(0, 20, 0.5, -80)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+-- Background image
+local bgImage = Instance.new("ImageLabel")
+bgImage.Size = UDim2.new(1, 0, 1, 0)
+bgImage.BackgroundTransparency = 1
+bgImage.ScaleType = Enum.ScaleType.Crop
+bgImage.ImageTransparency = 0.15
+bgImage.ZIndex = 1
+bgImage.Parent = frame
+bgImage.Image = "rbxassetid://2610133241"
+
+-- Dark overlay
+local overlay = Instance.new("Frame")
+overlay.Size = UDim2.new(1, 0, 1, 0)
+overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+overlay.BackgroundTransparency = 0.35
+overlay.BorderSizePixel = 0
+overlay.ZIndex = 2
+overlay.Parent = frame
+
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, 0, 1, 0)
+content.BackgroundTransparency = 1
+content.ZIndex = 3
+content.Parent = frame
+
+-- Drag bar
+local dragBar = Instance.new("Frame")
+dragBar.Size = UDim2.new(1, 0, 0, 35)
+dragBar.BackgroundTransparency = 1
+dragBar.ZIndex = 4
+dragBar.Parent = content
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -20, 0, 35)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Made by HUGEboss1, AKA Mickey Mouse"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 5
+title.Parent = dragBar
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -20, 0, 22)
+status.Position = UDim2.new(0, 10, 0, 38)
+status.BackgroundTransparency = 1
+status.Text = "Status: OFF"
+status.TextColor3 = Color3.fromRGB(255, 255, 255)
+status.Font = Enum.Font.SourceSans
+status.TextSize = 16
+status.ZIndex = 5
+status.Parent = content
+
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(1, -20, 0, 44)
+toggle.Position = UDim2.new(0, 10, 0, 70)
+toggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+toggle.BorderSizePixel = 0
+toggle.Text = "Turn ON"
+toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggle.Font = Enum.Font.SourceSansBold
+toggle.TextSize = 20
+toggle.ZIndex = 5
+toggle.Parent = content
+
+-- ===== Drag =====
+do
+	local dragging, dragStart, startPos
+
+	local function update(input)
+		local delta = input.Position - dragStart
+		frame.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+
+	dragBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+		end
+	end)
+
+	dragBar.InputEnded:Connect(function()
+		dragging = false
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging then update(input) end
+	end)
+end
+
+-- ===== Teleport + Auto Run =====
+local enabled = false
+local moveConn
+
+local function getChar()
+	local char = player.Character or player.CharacterAdded:Wait()
+	return char, char:WaitForChild("Humanoid"), char:WaitForChild("HumanoidRootPart")
+end
+
+local function updateUI()
+	if enabled then
+		status.Text = "Status: ON"
+		toggle.Text = "Turn OFF"
+		toggle.BackgroundColor3 = Color3.fromRGB(60, 140, 60)
+	else
+		status.Text = "Status: OFF"
+		toggle.Text = "Turn ON"
+		toggle.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	end
+end
+
+local function startAutoRun()
+	if moveConn then moveConn:Disconnect() end
+	moveConn = RunService.RenderStepped:Connect(function()
+		if enabled then
+			local _, humanoid, root = getChar()
+			humanoid:Move(root.CFrame.LookVector, false)
+		end
+	end)
+end
+
+local function stopAutoRun()
+	if moveConn then
+		moveConn:Disconnect()
+		moveConn = nil
+	end
+end
+
+local function startTeleportLoop()
+	task.spawn(function()
+		while enabled do
+			local _, _, root = getChar()
+			root.CFrame = TARGET_CFRAME
+			task.wait(0.15)
+		end
+	end)
+end
+
+toggle.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	updateUI()
+	if enabled then
+		startTeleportLoop()
+		startAutoRun()
+	else
+		stopAutoRun()
+	end
+end)
+
+updateUI()
